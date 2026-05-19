@@ -140,8 +140,6 @@ public sealed class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
-        FreezeBrushes();
-
         Presets = new ObservableCollection<SimulationPreset>(SimulationPreset.CreateDefaults());
         CustomBodies = new ObservableCollection<EditableBody>(CreateDefaultCustomBodies());
         CustomBodies.CollectionChanged += (_, _) =>
@@ -771,7 +769,6 @@ public sealed class MainViewModel : ObservableObject
         EnergyBrush.Freeze();
         MomentumBrush.Freeze();
     }
-
 
     private void Cancel()
     {
