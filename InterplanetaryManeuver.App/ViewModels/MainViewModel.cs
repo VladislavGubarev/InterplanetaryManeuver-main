@@ -60,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
     private string _optimizationText = "Оптимизация еще не запускалась.";
     private bool _hasResults;
     private bool _isModelCalculated;
+    private bool _isOptimizationDone;
     private IReadOnlyList<LineSeries> _orbitSeries = Array.Empty<LineSeries>();
     private IReadOnlyList<LineSeries> _speedSeries = Array.Empty<LineSeries>();
     private IReadOnlyList<LineSeries> _speedComponentSeries = Array.Empty<LineSeries>();
@@ -568,6 +569,12 @@ public sealed class MainViewModel : ObservableObject
         private set => SetProperty(ref _isModelCalculated, value);
     }
 
+    public bool IsOptimizationDone
+    {
+        get => _isOptimizationDone;
+        private set => SetProperty(ref _isOptimizationDone, value);
+    }
+
     public IReadOnlyList<LineSeries> OrbitSeries
 
     {
@@ -870,6 +877,7 @@ public sealed class MainViewModel : ObservableObject
                 ApplyIdealFlybyOutputs(ideal);
                 OptimizationText = BuildIdealOptimizationText(optimization);
                 StatusText = $"Аналитическая оптимизация завершена. Лучший Δv = {optimization.BestDeltaVKms:F3} км/с";
+                IsOptimizationDone = true;
             }
             catch (OperationCanceledException)
             {
@@ -989,6 +997,7 @@ public sealed class MainViewModel : ObservableObject
             ApplySimulationOutputs(bestResult, bestScenario, settings, bestMetrics);
             OptimizationText = BuildOptimizationSummary(top, bestMetrics, bestScore, validCount, collisionCount, lowFlybyCount, noSoiCount, noReturnCount);
             StatusText = $"Оптимизация завершена. Лучший score = {bestScore:F3} (учтён промах по Сатурну)";
+            IsOptimizationDone = true;
         }
         catch (OperationCanceledException)
         {
@@ -1395,15 +1404,18 @@ public sealed class MainViewModel : ObservableObject
     private void OnPreviewBodyDragged(Vector3d relPos)
     {
         if (IsRunning || HasResults) return;
-        
-        // relPos — это вектор от Юпитера к аппарату
+
         double angleRad = Math.Atan2(relPos.Y, relPos.X);
         double angleDeg = angleRad * 180.0 / Math.PI;
+        double distKm = relPos.Length / 1000.0;
 
-        // В системе Юпитера фаза отсчитывается от вектора Sun-Jupiter.
-        // Нам нужно знать текущий вектор Sun-Jupiter, чтобы пересчитать корректно.
-        // Но для прототипа достаточно просто менять фазу.
         PhaseAngleDeg = angleDeg;
+
+        if (distKm > 1e3)
+        {
+            double headingRad = Math.Atan2(distKm - 50_000.0, 100_000.0);
+            HeadingAngleDeg = Math.Clamp(headingRad * 180.0 / Math.PI, -90, 90);
+        }
     }
 
     private static IReadOnlyList<Point> BuildArcPoints(double startDeg, double endDeg, double radius)

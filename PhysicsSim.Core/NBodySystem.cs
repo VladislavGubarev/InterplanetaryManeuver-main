@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Numerics.Tensors;
 
 namespace PhysicsSim.Core;
 
