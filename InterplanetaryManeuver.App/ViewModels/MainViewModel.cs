@@ -64,6 +64,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _isOptimizationDone;
     private bool _useTensors;
     private bool _isDraggingBody;
+    private Vector3d? _lastDragRelPos;
     private IReadOnlyList<LineSeries> _orbitSeries = Array.Empty<LineSeries>();
     private IReadOnlyList<LineSeries> _speedSeries = Array.Empty<LineSeries>();
     private IReadOnlyList<LineSeries> _speedComponentSeries = Array.Empty<LineSeries>();
@@ -1383,9 +1384,18 @@ public sealed class MainViewModel : ObservableObject
                 }
             ];
 
+            var scenePositions = result.Positions[0];
+
+            // Если пользователь перетаскивал КА — сохраняем его позицию
+            if (_lastDragRelPos.HasValue && scIndex >= 0 && jupiterIndex >= 0)
+            {
+                scenePositions = (Vector3d[])scenePositions.Clone();
+                scenePositions[scIndex] = scenePositions[jupiterIndex] + _lastDragRelPos.Value;
+            }
+
             PreviewScene = new AnimationSceneData
             {
-                Positions = [result.Positions[0]],
+                Positions = [scenePositions],
                 BodyNames = scenario.Bodies.Select(b => b.Name).ToArray(),
                 BodyBrushes = scenario.Bodies.Select(b => GetBodyBrush(b.Name)).ToArray(),
                 CenterBodyIndex = jupiterIndex
@@ -1425,6 +1435,7 @@ public sealed class MainViewModel : ObservableObject
         if (IsRunning || HasResults) return;
 
         _isDraggingBody = true;
+        _lastDragRelPos = relPos;
 
         double angleRad = Math.Atan2(relPos.Y, relPos.X);
         double angleDeg = Math.Round(angleRad * 180.0 / Math.PI, 2);
@@ -1738,6 +1749,7 @@ public sealed class MainViewModel : ObservableObject
         _lastScenario = scenario;
         _lastSettings = settings;
         _lastFlybyMetrics = metrics;
+        _lastDragRelPos = null;
         ReportText = BuildReport(result, scenario, settings, metrics, 0, DurationDays * 86400.0, OutputStepHours * 3600.0, UseTensors);
         UpdateAnimationScene(result, scenario);
         IsModelCalculated = true;
