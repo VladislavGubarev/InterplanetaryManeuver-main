@@ -469,6 +469,12 @@
                                                     <TextBox Text="{Binding RelTol, UpdateSourceTrigger=PropertyChanged}" />
                                                 </StackPanel>
                                             </Grid>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                <CheckBox IsChecked="{Binding UseTensors}" VerticalAlignment="Center" />
+                                                <TextBlock Text="Тензорное ускорение (SIMD)" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Использовать System.Numerics.Tensors (TensorPrimitives) для SIMD-ускорения вычисления гравитационных сил. Результат идентичен скалярному пути — ускорение заметно на большом числе тел." Margin="8,0,0,0" />
+                                            </StackPanel>
                                         </StackPanel>
                                     </Border>
 

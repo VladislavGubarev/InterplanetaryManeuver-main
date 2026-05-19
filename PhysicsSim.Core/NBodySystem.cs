@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Numerics.Tensors;
 
 namespace PhysicsSim.Core;
 
@@ -20,21 +21,30 @@ public sealed class NBodySystem : IOdeSystem
     public const double DefaultSofteningSquared = 1e4;
 
     private readonly double _softeningSquared;
+    private readonly bool _useTensors;
+
+    // Предвыделенные буферы для тензорного пути (SoA-layout)
+    private readonly double[]? _px, _py, _pz;
+    private readonly double[]? _diffX, _diffY, _diffZ;
+    private readonly double[]? _r2Buf, _invR3Buf, _forceBuf;
 
     public string[] Names { get; }
     public double[] Masses { get; }
     public double[] GMs { get; }
+    public bool UseTensors => _useTensors;
 
     public int BodyCount => GMs.Length;
     public int Dimension => BodyCount * 6;
 
     public NBodySystem(double gravitationalConstant, IReadOnlyList<BodyState> bodies,
-        bool toBarycentricFrame = true, double softeningSquared = DefaultSofteningSquared)
+        bool toBarycentricFrame = true, double softeningSquared = DefaultSofteningSquared,
+        bool useTensors = false)
     {
         if (bodies.Count < 2)
             throw new ArgumentException("Need at least 2 bodies.", nameof(bodies));
 
         _softeningSquared = softeningSquared;
+        _useTensors = useTensors;
         Names = new string[bodies.Count];
         Masses = new double[bodies.Count];
         GMs = new double[bodies.Count];
@@ -52,10 +62,14 @@ public sealed class NBodySystem : IOdeSystem
 
         if (toBarycentricFrame)
             ShiftInitialStateToBarycentricFrame();
+
+        if (_useTensors)
+            AllocateTensorBuffers(bodies.Count, out _px, out _py, out _pz, out _diffX, out _diffY, out _diffZ, out _r2Buf, out _invR3Buf, out _forceBuf);
     }
 
     public NBodySystem(IReadOnlyList<BodyState> bodies, IReadOnlyList<double> gms,
-        bool toBarycentricFrame = true, double softeningSquared = DefaultSofteningSquared)
+        bool toBarycentricFrame = true, double softeningSquared = DefaultSofteningSquared,
+        bool useTensors = false)
     {
         if (bodies.Count < 2)
             throw new ArgumentException("Need at least 2 bodies.", nameof(bodies));
@@ -63,6 +77,7 @@ public sealed class NBodySystem : IOdeSystem
             throw new ArgumentException("GM count must match body count.", nameof(gms));
 
         _softeningSquared = softeningSquared;
+        _useTensors = useTensors;
         Names = new string[bodies.Count];
         Masses = new double[bodies.Count];
         GMs = new double[bodies.Count];
@@ -80,6 +95,25 @@ public sealed class NBodySystem : IOdeSystem
 
         if (toBarycentricFrame)
             ShiftInitialStateToBarycentricFrame();
+
+        if (_useTensors)
+            AllocateTensorBuffers(bodies.Count, out _px, out _py, out _pz, out _diffX, out _diffY, out _diffZ, out _r2Buf, out _invR3Buf, out _forceBuf);
+    }
+
+    private static void AllocateTensorBuffers(int n,
+        out double[] px, out double[] py, out double[] pz,
+        out double[] diffX, out double[] diffY, out double[] diffZ,
+        out double[] r2Buf, out double[] invR3Buf, out double[] forceBuf)
+    {
+        px = new double[n];
+        py = new double[n];
+        pz = new double[n];
+        diffX = new double[n];
+        diffY = new double[n];
+        diffZ = new double[n];
+        r2Buf = new double[n];
+        invR3Buf = new double[n];
+        forceBuf = new double[n];
     }
 
     public double[] InitialState { get; }
@@ -97,6 +131,14 @@ public sealed class NBodySystem : IOdeSystem
             dy[baseIdx + 2] = y[baseIdx + 5];
         }
 
+        if (_useTensors)
+            ComputeAccelerationsTensor(y, dy);
+        else
+            ComputeAccelerationsScalar(y, dy);
+    }
+
+    private void ComputeAccelerationsScalar(ReadOnlySpan<double> y, Span<double> dy)
+    {
         for (int i = 0; i < BodyCount; i++)
         {
             int bi = i * 6;
@@ -131,6 +173,76 @@ public sealed class NBodySystem : IOdeSystem
             dy[bi + 3] = ax;
             dy[bi + 4] = ay;
             dy[bi + 5] = az;
+        }
+    }
+
+    /// <summary>
+    /// Тензорный путь: использует TensorPrimitives (SIMD) для вычисления
+    /// гравитационных ускорений. Для каждого тела i все разности координат,
+    /// расстояния и силы вычисляются параллельно по всем j-телам через
+    /// векторизованные операции над Span&lt;double&gt;.
+    /// </summary>
+    private void ComputeAccelerationsTensor(ReadOnlySpan<double> y, Span<double> dy)
+    {
+        int n = BodyCount;
+
+        // Распаковка позиций из AoS (interleaved) в SoA (раздельные массивы)
+        for (int j = 0; j < n; j++)
+        {
+            int bj = j * 6;
+            _px![j] = y[bj + 0];
+            _py![j] = y[bj + 1];
+            _pz![j] = y[bj + 2];
+        }
+
+        Span<double> diffX = _diffX.AsSpan(0, n);
+        Span<double> diffY = _diffY.AsSpan(0, n);
+        Span<double> diffZ = _diffZ.AsSpan(0, n);
+        Span<double> r2 = _r2Buf.AsSpan(0, n);
+        Span<double> invR3 = _invR3Buf.AsSpan(0, n);
+        Span<double> force = _forceBuf.AsSpan(0, n);
+
+        ReadOnlySpan<double> pxSpan = _px.AsSpan(0, n);
+        ReadOnlySpan<double> pySpan = _py.AsSpan(0, n);
+        ReadOnlySpan<double> pzSpan = _pz.AsSpan(0, n);
+        ReadOnlySpan<double> gmSpan = GMs.AsSpan(0, n);
+
+        for (int i = 0; i < n; i++)
+        {
+            int bi = i * 6;
+            double xi = y[bi + 0];
+            double yi_val = y[bi + 1];
+            double zi = y[bi + 2];
+
+            // diffX[j] = px[j] - xi  (для всех j одновременно через SIMD)
+            TensorPrimitives.Subtract(pxSpan, xi, diffX);
+            TensorPrimitives.Subtract(pySpan, yi_val, diffY);
+            TensorPrimitives.Subtract(pzSpan, zi, diffZ);
+
+            // r2[j] = diffX[j]² + diffY[j]² + diffZ[j]² + ε²
+            TensorPrimitives.Multiply(diffX, diffX, r2);
+            TensorPrimitives.MultiplyAdd((ReadOnlySpan<double>)diffY, (ReadOnlySpan<double>)diffY, r2, r2);
+            TensorPrimitives.MultiplyAdd((ReadOnlySpan<double>)diffZ, (ReadOnlySpan<double>)diffZ, r2, r2);
+            TensorPrimitives.Add(r2, _softeningSquared, r2);
+
+            // invR3[j] = r2[j]^(-1.5)
+            for (int j = 0; j < n; j++)
+                invR3[j] = Math.Pow(r2[j], -1.5);
+
+            // force[j] = GM[j] * invR3[j]
+            TensorPrimitives.Multiply(gmSpan, (ReadOnlySpan<double>)invR3, force);
+
+            // Обнуляем вклад i-го тела на себя
+            force[i] = 0;
+
+            // ax = Σ force[j] * diffX[j],  ay = ...,  az = ...
+            TensorPrimitives.Multiply((ReadOnlySpan<double>)force, (ReadOnlySpan<double>)diffX, diffX);
+            TensorPrimitives.Multiply((ReadOnlySpan<double>)force, (ReadOnlySpan<double>)diffY, diffY);
+            TensorPrimitives.Multiply((ReadOnlySpan<double>)force, (ReadOnlySpan<double>)diffZ, diffZ);
+
+            dy[bi + 3] = TensorPrimitives.Sum((ReadOnlySpan<double>)diffX);
+            dy[bi + 4] = TensorPrimitives.Sum((ReadOnlySpan<double>)diffY);
+            dy[bi + 5] = TensorPrimitives.Sum((ReadOnlySpan<double>)diffZ);
         }
     }
 

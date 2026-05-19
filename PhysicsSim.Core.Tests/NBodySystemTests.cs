@@ -183,4 +183,62 @@ public class NBodySystemTests
         Assert.Equal(pos, read.Position);
         Assert.Equal(vel, read.Velocity);
     }
+
+    [Fact]
+    public void TensorPath_MatchesScalarPath()
+    {
+        double G = 6.674e-11;
+        var bodies = new List<BodyState>
+        {
+            new("Sun", 1.989e30, new Vector3d(0, 0, 0), new Vector3d(0, 0, 0)),
+            new("Jupiter", 1.898e27, new Vector3d(7.785e11, 0, 0), new Vector3d(0, 13070, 0)),
+            new("Saturn", 5.683e26, new Vector3d(1.434e12, 0, 0), new Vector3d(0, 9690, 0)),
+        };
+
+        var scalar = new NBodySystem(G, bodies, toBarycentricFrame: false, useTensors: false);
+        var tensor = new NBodySystem(G, bodies, toBarycentricFrame: false, useTensors: true);
+
+        var dyScalar = new double[scalar.Dimension];
+        var dyTensor = new double[tensor.Dimension];
+
+        scalar.ComputeDerivatives(0, scalar.InitialState, dyScalar);
+        tensor.ComputeDerivatives(0, tensor.InitialState, dyTensor);
+
+        for (int k = 0; k < dyScalar.Length; k++)
+        {
+            Assert.Equal(dyScalar[k], dyTensor[k], 6);
+        }
+    }
+
+    [Fact]
+    public void TensorPath_EnergyConserved()
+    {
+        double G = 1.0;
+        double M = 1000.0;
+        double m = 1.0;
+        double r = 10.0;
+        double v = Math.Sqrt(G * M / r);
+
+        var bodies = new List<BodyState>
+        {
+            new("Star", M, Vector3d.Zero, Vector3d.Zero),
+            new("Planet", m, new Vector3d(r, 0, 0), new Vector3d(0, v, 0)),
+        };
+
+        var system = new NBodySystem(G, bodies, toBarycentricFrame: true, softeningSquared: 0, useTensors: true);
+        double period = 2 * Math.PI * r / v;
+
+        var result = NBodySimulator.Simulate(
+            system, t0: 0, t1: period, outputDt: period / 20,
+            settings: new PhysicsSim.Core.Ode.IntegrationSettings
+            {
+                AbsTol = 1e-8, RelTol = 1e-8, InitialStep = 0.01,
+                MinStep = 1e-10, MaxStep = 0.5,
+            });
+
+        double e0 = result.TotalEnergies![0];
+        double eFinal = result.TotalEnergies[^1];
+        double relError = Math.Abs((eFinal - e0) / Math.Abs(e0));
+        Assert.True(relError < 1e-6, $"Tensor energy drift {relError:E2}");
+    }
 }
