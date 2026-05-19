@@ -1409,7 +1409,7 @@ public sealed class MainViewModel : ObservableObject
 
         double angleRad = Math.Atan2(relPos.Y, relPos.X);
         double angleDeg = angleRad * 180.0 / Math.PI;
-        double distKm = relPos.Length / 1000.0;
+        double distKm = relPos.Length() / 1000.0;
 
         PhaseAngleDeg = angleDeg;
 

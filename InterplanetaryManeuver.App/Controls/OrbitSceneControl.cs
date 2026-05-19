@@ -118,7 +118,6 @@ public sealed class OrbitSceneControl : FrameworkElement
     }
 
     private int _draggedBodyIndex = -1;
-    private Point _lastMousePoint;
     private Func<Vector3d, Point>? _currentMap;
     private Func<Point, Vector3d>? _currentUnmap;
 
