@@ -557,6 +557,7 @@
                                                                         SceneData="{Binding PreviewScene}"
                                                                         DraggableBodyIndex="{Binding PreviewSpacecraftIndex}"
                                                                         BodyDraggedCommand="{Binding PreviewBodyDraggedCommand}"
+                                                                        BodyDragEndedCommand="{Binding PreviewBodyDragEndedCommand}"
                                                                         Title="Положение аппарата и пролёт" />
                                             <TextBlock Text="* Центр координат — Юпитер. Нажмите левой кнопкой в любое место на сцене чтобы переместить аппарат и изменить параметры входа."
                                                        FontSize="11" Foreground="{StaticResource Brush.Text2}" Margin="4,8,0,0" FontStyle="Italic" />

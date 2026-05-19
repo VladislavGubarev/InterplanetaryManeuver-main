@@ -81,6 +81,13 @@ public sealed class OrbitSceneControl : FrameworkElement
             typeof(OrbitSceneControl),
             new PropertyMetadata(null));
 
+    public static readonly DependencyProperty BodyDragEndedCommandProperty =
+        DependencyProperty.Register(
+            nameof(BodyDragEndedCommand),
+            typeof(System.Windows.Input.ICommand),
+            typeof(OrbitSceneControl),
+            new PropertyMetadata(null));
+
     public AnimationSceneData? SceneData
     {
         get => (AnimationSceneData?)GetValue(SceneDataProperty);
@@ -115,6 +122,12 @@ public sealed class OrbitSceneControl : FrameworkElement
     {
         get => (System.Windows.Input.ICommand?)GetValue(BodyDraggedCommandProperty);
         set => SetValue(BodyDraggedCommandProperty, value);
+    }
+
+    public System.Windows.Input.ICommand? BodyDragEndedCommand
+    {
+        get => (System.Windows.Input.ICommand?)GetValue(BodyDragEndedCommandProperty);
+        set => SetValue(BodyDragEndedCommandProperty, value);
     }
 
     private int _draggedBodyIndex = -1;
@@ -226,6 +239,8 @@ public sealed class OrbitSceneControl : FrameworkElement
             {
                 _draggedBodyIndex = -1;
                 ReleaseMouseCapture();
+                if (BodyDragEndedCommand?.CanExecute(null) == true)
+                    BodyDragEndedCommand.Execute(null);
                 e.Handled = true;
                 return;
             }
