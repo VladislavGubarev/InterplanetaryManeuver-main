@@ -79,7 +79,7 @@ public class NBodySystemTests
             new("B", 1.0, new Vector3d(10, 0, 0), new Vector3d(-1, 2, 0)),
         };
 
-        var system = new NBodySystem(1.0, bodies, toBarycentricFrame: false);
+        var system = new NBodySystem(1.0, bodies, toBarycentricFrame: false, softeningSquared: 0);
         var dy = new double[system.Dimension];
         system.ComputeDerivatives(0, system.InitialState, dy);
 
@@ -93,7 +93,7 @@ public class NBodySystemTests
     {
         double G = 1.0;
         double m = 1.0;
-        double r = 10.0;
+        double r = 1e6;
 
         var bodies = new List<BodyState>
         {
@@ -101,7 +101,7 @@ public class NBodySystemTests
             new("B", m, new Vector3d(r / 2, 0, 0), Vector3d.Zero),
         };
 
-        var system = new NBodySystem(G, bodies, toBarycentricFrame: false);
+        var system = new NBodySystem(G, bodies, toBarycentricFrame: false, softeningSquared: 0);
         var dy = new double[system.Dimension];
         system.ComputeDerivatives(0, system.InitialState, dy);
 
@@ -147,6 +147,22 @@ public class NBodySystemTests
         Assert.Equal(6, p.X, 10);
         Assert.Equal(20, p.Y, 10);
         Assert.Equal(0, p.Z, 10);
+    }
+
+    [Fact]
+    public void GmConstructor_ProducesCorrectGMs()
+    {
+        var bodies = new List<BodyState>
+        {
+            new("Sun", 1e30, Vector3d.Zero, Vector3d.Zero),
+            new("Planet", 1e24, new Vector3d(1e11, 0, 0), new Vector3d(0, 3e4, 0)),
+        };
+        var gms = new List<double> { 6.674e19, 6.674e13 };
+
+        var system = new NBodySystem(bodies, gms, toBarycentricFrame: false);
+        Assert.Equal(6.674e19, system.GMs[0], 1e10);
+        Assert.Equal(6.674e13, system.GMs[1], 1e4);
+        Assert.Equal(2, system.BodyCount);
     }
 
     [Fact]

@@ -30,7 +30,7 @@ public class NBodySimulatorTests
             new("Planet", m, new Vector3d(r, 0, 0), new Vector3d(0, v, 0)),
         };
 
-        var system = new NBodySystem(G, bodies, toBarycentricFrame: true);
+        var system = new NBodySystem(G, bodies, toBarycentricFrame: true, softeningSquared: 0);
         double period = 2 * Math.PI * r / v;
 
         var result = NBodySimulator.Simulate(
@@ -61,7 +61,7 @@ public class NBodySimulatorTests
             new("Planet", m, new Vector3d(r, 0, 0), new Vector3d(0, v, 0)),
         };
 
-        var system = new NBodySystem(G, bodies, toBarycentricFrame: true);
+        var system = new NBodySystem(G, bodies, toBarycentricFrame: true, softeningSquared: 0);
         double period = 2 * Math.PI * r / v;
 
         var result = NBodySimulator.Simulate(
@@ -108,7 +108,7 @@ public class NBodySimulatorTests
             new("B", 1.0, new Vector3d(2, 0, 0), new Vector3d(-5, 0, 0)),
         };
 
-        var system = new NBodySystem(G, bodies, toBarycentricFrame: false);
+        var system = new NBodySystem(G, bodies, toBarycentricFrame: false, softeningSquared: 0);
         var radii = new List<double> { 0.5, 0.5 };
 
         var result = NBodySimulator.Simulate(
@@ -132,7 +132,7 @@ public class NBodySimulatorTests
             new("C", 1.0, new Vector3d(0, 8, 0), new Vector3d(-3, 0, 0)),
         };
 
-        var system = new NBodySystem(G, bodies, toBarycentricFrame: true);
+        var system = new NBodySystem(G, bodies, toBarycentricFrame: true, softeningSquared: 0);
         var result = NBodySimulator.Simulate(
             system, 0, 2, 0.5, FastSettings);
 
@@ -155,7 +155,7 @@ public class NBodySimulatorTests
             new("B", 1.0, new Vector3d(5, 0, 0), new Vector3d(0, 20, 0)),
         };
 
-        var system = new NBodySystem(G, bodies, toBarycentricFrame: false);
+        var system = new NBodySystem(G, bodies, toBarycentricFrame: false, softeningSquared: 0);
         var result = NBodySimulator.Simulate(
             system, 0, 10, 0.1, FastSettings,
             stopCondition: (t, state) =>

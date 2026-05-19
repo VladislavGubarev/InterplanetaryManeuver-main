@@ -20,7 +20,8 @@ public sealed class MainViewModel : ObservableObject
     private const double SaturnMissPenaltyWeight = 40.0;
     private const double SoiMissPenaltyWeight = 120.0;
     private const double ReturnPenaltyWeight = 180.0;
-    private const double LowFlybyPenaltyWeight = 36.0;
+    private const double LowFlybyPenaltyWeight = 80.0;
+    private const double AtmosphericGrazePenaltyWeight = 500.0;
     private const double CollisionPenaltyWeight = 1_000_000.0;
     private const int IdealOptimizationMaxIterations = 24;
 
@@ -1228,10 +1229,9 @@ public sealed class MainViewModel : ObservableObject
         double t1 = DurationDays * 86400.0;
         double outDt = OutputStepHours * 3600.0;
 
-        var system = new NBodySystem(
-            scenario.GravitationalConstant,
-            scenario.Bodies,
-            scenario.ToBarycentricFrame);
+        var system = scenario.BodyGMs != null
+            ? new NBodySystem(scenario.Bodies, scenario.BodyGMs, scenario.ToBarycentricFrame)
+            : new NBodySystem(scenario.GravitationalConstant, scenario.Bodies, scenario.ToBarycentricFrame);
 
         StopCondition? stopCondition = null;
         if (scenario.SpacecraftIndex >= 0 && scenario.JupiterIndex >= 0)
@@ -1320,7 +1320,9 @@ public sealed class MainViewModel : ObservableObject
             double duration = 40.0 * 86400.0;
             double step = 12.0 * 3600.0;
 
-            var system = new NBodySystem(scenario.GravitationalConstant, scenario.Bodies, scenario.ToBarycentricFrame);
+            var system = scenario.BodyGMs != null
+                ? new NBodySystem(scenario.Bodies, scenario.BodyGMs, scenario.ToBarycentricFrame)
+                : new NBodySystem(scenario.GravitationalConstant, scenario.Bodies, scenario.ToBarycentricFrame);
             var result = await Task.Run(() =>
                 NBodySimulator.Simulate(system, 0, duration, step, settings, scenario.BodyCollisionRadii, null, token),
                 token);
@@ -1748,7 +1750,7 @@ public sealed class MainViewModel : ObservableObject
         if (r0 <= q)
             throw new InvalidOperationException("Для идеальной модели стартовое расстояние r0 должно быть больше радиуса пролёта R.");
 
-        double mu = 6.67430e-11 * AstronomyConstants.JupiterMass;
+        double mu = AstronomyConstants.JupiterGM;
         double cosNu = Clamp(2.0 * q / r0 - 1.0, -1.0, 1.0);
         double nuLimit = Math.Acos(cosNu);
         const int sampleCount = 240;
@@ -2055,7 +2057,7 @@ public sealed class MainViewModel : ObservableObject
         if (r0 <= q)
             throw new InvalidOperationException("Стартовое расстояние должно быть больше радиуса пролёта.");
 
-        double mu = 6.67430e-11 * AstronomyConstants.JupiterMass;
+        double mu = AstronomyConstants.JupiterGM;
         double cosNu = Clamp(2.0 * q / r0 - 1.0, -1.0, 1.0);
         double nuLimit = Math.Acos(cosNu);
 
@@ -2309,7 +2311,11 @@ public sealed class MainViewModel : ObservableObject
         double returnGap = (metrics.InitialDistanceToJupiter - metrics.FinalDistanceToJupiter)
             / Math.Max(metrics.InitialDistanceToJupiter, 1.0);
 
+        double atmosphericAltitude = 1.1 * AstronomyConstants.JupiterMeanRadius;
+        double atmosphericGap = (atmosphericAltitude - metrics.MinDistanceToJupiter) / atmosphericAltitude;
+
         double lowFlybyPenalty = SmoothQuadraticPenalty(lowFlybyGap, LowFlybyPenaltyWeight);
+        double atmosphericPenalty = SmoothQuadraticPenalty(atmosphericGap, AtmosphericGrazePenaltyWeight);
         double collisionPenalty = SmoothQuadraticPenalty(collisionGap, CollisionPenaltyWeight);
         double soiMissPenalty = SmoothQuadraticPenalty(soiMissGap, SoiMissPenaltyWeight);
         double returnPenalty = SmoothQuadraticPenalty(returnGap, ReturnPenaltyWeight);
@@ -2317,6 +2323,7 @@ public sealed class MainViewModel : ObservableObject
         return deltaVGainKms
             - saturnPenalty
             - lowFlybyPenalty
+            - atmosphericPenalty
             - collisionPenalty
             - soiMissPenalty
             - returnPenalty;
@@ -2434,7 +2441,7 @@ public sealed class MainViewModel : ObservableObject
         var sb = new StringBuilder();
         sb.AppendLine($"Проверено траекторий: {current} / {total}");
         sb.AppendLine($"Score = Δv - {SaturnMissPenaltyWeight:F0} * rSaturnMin - Pгладк");
-        sb.AppendLine($"Pгладк = {SoiMissPenaltyWeight:F0}*missSOI^2 + {ReturnPenaltyWeight:F0}*missR0^2 + {LowFlybyPenaltyWeight:F0}*lowJ^2 + {CollisionPenaltyWeight:E0}*collJ^2");
+        sb.AppendLine($"Pгладк = {SoiMissPenaltyWeight:F0}*missSOI^2 + {ReturnPenaltyWeight:F0}*missR0^2 + {LowFlybyPenaltyWeight:F0}*lowJ^2 + {AtmosphericGrazePenaltyWeight:F0}*atmo^2 + {CollisionPenaltyWeight:E0}*collJ^2");
         sb.AppendLine($"Допустимых: {validCount}, столкновений: {collisionCount}, низких пролётов: {lowFlybyCount}, без входа в SOI: {noSoiCount}, без возврата на r0: {noReturnCount}");
         if (top.Count > 0)
         {
@@ -2451,7 +2458,7 @@ public sealed class MainViewModel : ObservableObject
         var sb = new StringBuilder();
         sb.AppendLine($"Лучший score: {bestScore:F3}");
         sb.AppendLine($"Формула score: Δv - {SaturnMissPenaltyWeight:F0} * rSaturnMin - Pгладк.");
-        sb.AppendLine($"Pгладк = {SoiMissPenaltyWeight:F0}*missSOI^2 + {ReturnPenaltyWeight:F0}*missR0^2 + {LowFlybyPenaltyWeight:F0}*lowJ^2 + {CollisionPenaltyWeight:E0}*collJ^2.");
+        sb.AppendLine($"Pгладк = {SoiMissPenaltyWeight:F0}*missSOI^2 + {ReturnPenaltyWeight:F0}*missR0^2 + {LowFlybyPenaltyWeight:F0}*lowJ^2 + {AtmosphericGrazePenaltyWeight:F0}*atmo^2 + {CollisionPenaltyWeight:E0}*collJ^2.");
         sb.AppendLine($"Допустимых траекторий: {validCount}");
         sb.AppendLine($"Столкновений с Юпитером: {collisionCount}");
         sb.AppendLine($"Низких пролётов (< 2Rj): {lowFlybyCount}");
@@ -2576,6 +2583,8 @@ public sealed class MainViewModel : ObservableObject
         sb.AppendLine($"Эпоха начальных данных: {scenario.EpochUtc:yyyy-MM-dd HH:mm} UTC");
         sb.AppendLine($"Время моделирования: t0 = {t0:R} c, t1 = {t1:R} c, шаг вывода = {outputDt:R} c");
         sb.AppendLine($"G = {scenario.GravitationalConstant:R} м^3/(кг·с^2)");
+        if (scenario.BodyGMs != null)
+            sb.AppendLine("GM параметры: используются точные IAU 2015 / JPL DE440 значения");
         sb.AppendLine($"СК: {(scenario.ToBarycentricFrame ? "барицентрическая" : "как задано")}");
         sb.AppendLine($"Эфемериды: {(scenario.UsesEphemerides ? "NASA/JPL Horizons API" : "нет")}");
         sb.AppendLine();
@@ -2583,7 +2592,14 @@ public sealed class MainViewModel : ObservableObject
         sb.AppendLine("## Модель");
         sb.AppendLine("Используется ньютоновская гравитация для N тел:");
         sb.AppendLine("r_i' = v_i");
-        sb.AppendLine("v_i' = Σ_{j!=i} G*m_j*(r_j - r_i)/|r_j - r_i|^3");
+        sb.AppendLine("v_i' = Σ_{j!=i} GM_j*(r_j - r_i)/(|r_j - r_i|^2 + ε²)^(3/2)");
+        sb.AppendLine("ε² = 10⁴ м² (softening для численной стабильности)");
+        sb.AppendLine();
+        sb.AppendLine("### Ограничения модели");
+        sb.AppendLine("- Не учитывается давление солнечного излучения (~10⁻⁷ м/с² для реального КА).");
+        sb.AppendLine("- Не учитывается несферичность планет (J2 и выше гармоники).");
+        sb.AppendLine("- Перетаскивание КА на предпросмотре работает в 2D (XY-плоскость), Z = 0.");
+        sb.AppendLine("- Проверки на столкновение — жёсткие (не дифференцируемые); оптимизация по конечным разностям.");
         sb.AppendLine();
 
         sb.AppendLine("## Численный метод");
@@ -2730,11 +2746,10 @@ public sealed class MainViewModel : ObservableObject
 
     private static IEnumerable<EditableBody> CreateDefaultCustomBodies()
     {
-        const double g = 6.67430e-11;
         double rJ = AstronomyConstants.JupiterSemiMajorAxis;
         double rS = AstronomyConstants.SaturnSemiMajorAxis;
-        double vJ = Math.Sqrt(g * AstronomyConstants.SolarMass / rJ) / 1000.0;
-        double vS = Math.Sqrt(g * AstronomyConstants.SolarMass / rS) / 1000.0;
+        double vJ = Math.Sqrt(AstronomyConstants.SolarGM / rJ) / 1000.0;
+        double vS = Math.Sqrt(AstronomyConstants.SolarGM / rS) / 1000.0;
 
         return
         [

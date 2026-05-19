@@ -2,17 +2,31 @@ namespace PhysicsSim.Core;
 
 public static class AstronomyConstants
 {
+    public const double G = 6.67430e-11;
     public const double AstronomicalUnit = 1.495978707e11;
 
-    public const double SolarMass = 1.98847e30;
-    public const double MercuryMass = 3.3011e23;
-    public const double VenusMass = 4.8675e24;
-    public const double EarthMass = 5.97237e24;
-    public const double MarsMass = 6.4171e23;
-    public const double JupiterMass = 1.89813e27;
-    public const double SaturnMass = 5.6834e26;
-    public const double UranusMass = 8.6810e25;
-    public const double NeptuneMass = 1.02413e26;
+    // GM (гравитационные параметры, м³/с²) — точнее, чем G*M по отдельности.
+    // Источник: IAU 2015 / JPL DE440.
+    public const double SolarGM        = 1.32712440041279419e20;
+    public const double MercuryGM      = 2.2031868551e13;
+    public const double VenusGM        = 3.24858592000e14;
+    public const double EarthGM        = 3.98600435507e14;
+    public const double MarsGM         = 4.2828375816e13;
+    public const double JupiterGM      = 1.26712764100000e17;
+    public const double SaturnGM       = 3.79395259000000e16;
+    public const double UranusGM       = 5.79393658000000e15;
+    public const double NeptuneGM      = 6.83509920000000e15;
+
+    // Массы (кг) — для справки и совместимости (вычислены как GM/G).
+    public const double SolarMass = SolarGM / G;
+    public const double MercuryMass = MercuryGM / G;
+    public const double VenusMass = VenusGM / G;
+    public const double EarthMass = EarthGM / G;
+    public const double MarsMass = MarsGM / G;
+    public const double JupiterMass = JupiterGM / G;
+    public const double SaturnMass = SaturnGM / G;
+    public const double UranusMass = UranusGM / G;
+    public const double NeptuneMass = NeptuneGM / G;
 
     public const double SolarRadius = 6.9634e8;
     public const double MercuryRadius = 2.4397e6;
