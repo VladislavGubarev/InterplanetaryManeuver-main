@@ -349,7 +349,7 @@
                                                             <TextBlock Text="Фаза входа, град" Style="{StaticResource FieldLabel}" />
                                                             <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Угол положения аппарата на сфере влияния Юпитера относительно вектора Солнце-Юпитер." />
                                                         </StackPanel>
-                                                        <TextBox Text="{Binding PhaseAngleDeg, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBox Text="{Binding PhaseAngleDeg, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:F2}}" />
                                                     </StackPanel>
 
                                                     <StackPanel Grid.Column="2">
@@ -357,7 +357,7 @@
                                                             <TextBlock Text="Угол входа, град" Style="{StaticResource FieldLabel}" />
                                                             <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Угол между вектором скорости аппарата и направлением к центру Юпитера." />
                                                         </StackPanel>
-                                                        <TextBox Text="{Binding HeadingAngleDeg, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBox Text="{Binding HeadingAngleDeg, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:F2}}" />
                                                     </StackPanel>
                                                 </Grid>
 

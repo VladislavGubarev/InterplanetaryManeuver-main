@@ -1415,15 +1415,33 @@ public sealed class MainViewModel : ObservableObject
         if (IsRunning || HasResults) return;
 
         double angleRad = Math.Atan2(relPos.Y, relPos.X);
-        double angleDeg = angleRad * 180.0 / Math.PI;
+        double angleDeg = Math.Round(angleRad * 180.0 / Math.PI, 2);
         double distKm = relPos.Length() / 1000.0;
+
+        // Обновляем позицию КА на сцене мгновенно (без пересчёта симуляции)
+        var scene = PreviewScene;
+        if (scene != null && PreviewSpacecraftIndex >= 0
+            && scene.Positions.Length > 0
+            && PreviewSpacecraftIndex < scene.Positions[0].Length)
+        {
+            int frame = 0;
+            int sci = PreviewSpacecraftIndex;
+            int cenIdx = scene.CenterBodyIndex;
+            Vector3d centerPos = cenIdx >= 0 && cenIdx < scene.Positions[frame].Length
+                ? scene.Positions[frame][cenIdx]
+                : Vector3d.Zero;
+            scene.Positions[frame][sci] = centerPos + relPos;
+            // Принудительно обновляем привязку — мутация массива не вызывает PropertyChanged
+            PreviewScene = null!;
+            PreviewScene = scene;
+        }
 
         PhaseAngleDeg = angleDeg;
 
         if (distKm > 1e3)
         {
             double headingRad = Math.Atan2(distKm - 50_000.0, 100_000.0);
-            HeadingAngleDeg = Math.Clamp(headingRad * 180.0 / Math.PI, -90, 90);
+            HeadingAngleDeg = Math.Round(Math.Clamp(headingRad * 180.0 / Math.PI, -90, 90), 2);
         }
     }
 
