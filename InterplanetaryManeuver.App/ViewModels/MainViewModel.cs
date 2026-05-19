@@ -62,6 +62,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _hasResults;
     private bool _isModelCalculated;
     private bool _isOptimizationDone;
+    private bool _useTensors;
     private IReadOnlyList<LineSeries> _orbitSeries = Array.Empty<LineSeries>();
     private IReadOnlyList<LineSeries> _speedSeries = Array.Empty<LineSeries>();
     private IReadOnlyList<LineSeries> _speedComponentSeries = Array.Empty<LineSeries>();
@@ -574,6 +575,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _isOptimizationDone;
         private set => SetProperty(ref _isOptimizationDone, value);
+    }
+
+    public bool UseTensors
+    {
+        get => _useTensors;
+        set => SetProperty(ref _useTensors, value);
     }
 
     public IReadOnlyList<LineSeries> OrbitSeries
@@ -1230,8 +1237,8 @@ public sealed class MainViewModel : ObservableObject
         double outDt = OutputStepHours * 3600.0;
 
         var system = scenario.BodyGMs != null
-            ? new NBodySystem(scenario.Bodies, scenario.BodyGMs, scenario.ToBarycentricFrame)
-            : new NBodySystem(scenario.GravitationalConstant, scenario.Bodies, scenario.ToBarycentricFrame);
+            ? new NBodySystem(scenario.Bodies, scenario.BodyGMs, scenario.ToBarycentricFrame, useTensors: UseTensors)
+            : new NBodySystem(scenario.GravitationalConstant, scenario.Bodies, scenario.ToBarycentricFrame, useTensors: UseTensors);
 
         StopCondition? stopCondition = null;
         if (scenario.SpacecraftIndex >= 0 && scenario.JupiterIndex >= 0)
@@ -1321,8 +1328,8 @@ public sealed class MainViewModel : ObservableObject
             double step = 12.0 * 3600.0;
 
             var system = scenario.BodyGMs != null
-                ? new NBodySystem(scenario.Bodies, scenario.BodyGMs, scenario.ToBarycentricFrame)
-                : new NBodySystem(scenario.GravitationalConstant, scenario.Bodies, scenario.ToBarycentricFrame);
+                ? new NBodySystem(scenario.Bodies, scenario.BodyGMs, scenario.ToBarycentricFrame, useTensors: UseTensors)
+                : new NBodySystem(scenario.GravitationalConstant, scenario.Bodies, scenario.ToBarycentricFrame, useTensors: UseTensors);
             var result = await Task.Run(() =>
                 NBodySimulator.Simulate(system, 0, duration, step, settings, scenario.BodyCollisionRadii, null, token),
                 token);
@@ -1702,7 +1709,7 @@ public sealed class MainViewModel : ObservableObject
         _lastScenario = scenario;
         _lastSettings = settings;
         _lastFlybyMetrics = metrics;
-        ReportText = BuildReport(result, scenario, settings, metrics, 0, DurationDays * 86400.0, OutputStepHours * 3600.0);
+        ReportText = BuildReport(result, scenario, settings, metrics, 0, DurationDays * 86400.0, OutputStepHours * 3600.0, UseTensors);
         UpdateAnimationScene(result, scenario);
         IsModelCalculated = true;
         HasResults = true;
@@ -2574,7 +2581,8 @@ public sealed class MainViewModel : ObservableObject
         FlybyMetrics? flybyMetrics,
         double t0,
         double t1,
-        double outputDt)
+        double outputDt,
+        bool useTensors = false)
     {
         var sb = new StringBuilder();
         sb.AppendLine("# Отчет симуляции");
@@ -2604,6 +2612,7 @@ public sealed class MainViewModel : ObservableObject
 
         sb.AppendLine("## Численный метод");
         sb.AppendLine("Интегратор: адаптивный Dormand-Prince RK 5(4).");
+        sb.AppendLine($"Тензорное ускорение (SIMD): {(useTensors ? "вкл" : "выкл")}");
         sb.AppendLine("scale = AbsTol + RelTol * max(|y|, |y_new|)");
         sb.AppendLine("err = || (y_new - y_embedded4) / scale ||_RMS");
         sb.AppendLine($"AbsTol = {settings.AbsTol:R}");
