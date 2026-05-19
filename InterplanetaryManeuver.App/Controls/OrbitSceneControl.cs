@@ -161,21 +161,19 @@ public sealed class OrbitSceneControl : FrameworkElement
 
         if (e.ChangedButton == System.Windows.Input.MouseButton.Left && _lastSceneRect.Contains(e.GetPosition(this)))
         {
-            // Hit test for draggable body
-            if (DraggableBodyIndex >= 0 && SceneData != null && _currentMap != null)
+            if (DraggableBodyIndex >= 0 && SceneData != null && _currentUnmap != null)
             {
                 int frame = Math.Clamp(FrameIndex, 0, SceneData.Positions.Length - 1);
                 if (DraggableBodyIndex < SceneData.Positions[frame].Length)
                 {
-                    Point p = _currentMap(SceneData.Positions[frame][DraggableBodyIndex]);
+                    _draggedBodyIndex = DraggableBodyIndex;
                     Point mouse = e.GetPosition(this);
-                    if ((p - mouse).Length < 25) // Hit radius
-                    {
-                        _draggedBodyIndex = DraggableBodyIndex;
-                        CaptureMouse();
-                        e.Handled = true;
-                        return;
-                    }
+                    Vector3d dataPos = _currentUnmap(mouse);
+                    if (BodyDraggedCommand?.CanExecute(dataPos) == true)
+                        BodyDraggedCommand.Execute(dataPos);
+                    CaptureMouse();
+                    e.Handled = true;
+                    return;
                 }
             }
 
@@ -547,7 +545,7 @@ public sealed class OrbitSceneControl : FrameworkElement
 
     private void DrawZoomHint(DrawingContext dc, Rect sceneRect)
     {
-        string zoomText = $"Масштаб: {_zoomFactor:F2}x  |  Колесо: зум  |  Средняя кнопка: сброс";
+        string zoomText = $"Масштаб: {_zoomFactor:F2}x  |  Колесо: зум  |  ЛКМ: перетащить КА  |  Средняя: сброс";
         var hintText = CreateText(
             zoomText,
             11,

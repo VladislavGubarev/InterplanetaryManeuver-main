@@ -9,8 +9,8 @@
                  Title="Межпланетный маневр"
                  Width="1500"
                  Height="940"
-                 MinWidth="1240"
-                 MinHeight="820"
+                 MinWidth="1024"
+                 MinHeight="700"
                  Background="{StaticResource Brush.WindowBackground}"
                  ResizeMode="CanResize"
                  WindowBackdropType="Mica"
@@ -187,21 +187,38 @@
                     <StackPanel>
                         <ToggleButton x:Name="SimulationButton" Style="{StaticResource RailButtonStyle}" Click="NavButton_Click" Tag="0" IsChecked="True">
                             <StackPanel>
-                                <ui:SymbolIcon Symbol="Home24" HorizontalAlignment="Center" FontSize="22" />
+                                <Grid HorizontalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="Home24" FontSize="22" />
+                                    <Border Background="#5CC9F5FF" CornerRadius="8" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-8,0">
+                                        <TextBlock Text="1" FontSize="9" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                </Grid>
                                 <TextBlock Text="Модель" Margin="0,8,0,0" HorizontalAlignment="Center" />
                             </StackPanel>
                         </ToggleButton>
 
-                        <ToggleButton x:Name="OptimizationButton" Style="{StaticResource RailButtonStyle}" Click="NavButton_Click" Tag="1" IsEnabled="{Binding IsModelCalculated}">
+                        <ToggleButton x:Name="OptimizationButton" Style="{StaticResource RailButtonStyle}" Click="NavButton_Click" Tag="1" IsEnabled="{Binding IsModelCalculated}"
+                                      ToolTip="Сначала запустите расчёт на вкладке Модель">
                             <StackPanel>
-                                <ui:SymbolIcon Symbol="DataHistogram24" HorizontalAlignment="Center" FontSize="22" />
+                                <Grid HorizontalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="DataHistogram24" FontSize="22" />
+                                    <Border Background="#5CC9F5FF" CornerRadius="8" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-8,0">
+                                        <TextBlock Text="2" FontSize="9" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                </Grid>
                                 <TextBlock Text="Поиск" Margin="0,8,0,0" HorizontalAlignment="Center" />
                             </StackPanel>
                         </ToggleButton>
 
-                        <ToggleButton x:Name="AnimationButton" Style="{StaticResource RailButtonStyle}" Click="NavButton_Click" Tag="2" IsEnabled="{Binding IsModelCalculated}">
+                        <ToggleButton x:Name="AnimationButton" Style="{StaticResource RailButtonStyle}" Click="NavButton_Click" Tag="2" IsEnabled="{Binding IsModelCalculated}"
+                                      ToolTip="Сначала запустите расчёт или оптимизацию">
                             <StackPanel>
-                                <ui:SymbolIcon Symbol="Play24" HorizontalAlignment="Center" FontSize="22" />
+                                <Grid HorizontalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="Play24" FontSize="22" />
+                                    <Border Background="#5CC9F5FF" CornerRadius="8" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-8,0">
+                                        <TextBlock Text="3" FontSize="9" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                </Grid>
                                 <TextBlock Text="Сцена" Margin="0,8,0,0" HorizontalAlignment="Center" />
                             </StackPanel>
                         </ToggleButton>
@@ -280,20 +297,26 @@
                             Style="{StaticResource ContentOnlyTabControl}"
                             SelectedIndex="0">
                     <TabItem Header="Симуляция">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="390" />
+                                    <ColumnDefinition Width="Auto" MinWidth="300" MaxWidth="400" />
                                     <ColumnDefinition Width="18" />
-                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" MinWidth="340" />
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel>
                                     <Border Style="{StaticResource SurfaceCard}">
                                         <StackPanel>
-                                            <TextBlock Text="Сценарий и сближение" Style="{StaticResource SectionTitle}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Сценарий и сближение" Style="{StaticResource SectionTitle}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Настройки начальных условий для полёта: выбор пресета, эпоха, углы входа и скорость." Margin="8,0,0,14" />
+                                            </StackPanel>
 
-                                            <TextBlock Text="Пресет" Style="{StaticResource FieldLabel}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Пресет" Style="{StaticResource FieldLabel}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Готовый набор параметров сценария. Выберите подходящий пресет для быстрого старта или настройте вручную." />
+                                            </StackPanel>
                                             <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" Margin="0,0,0,14" />
 
                                             <StackPanel>
@@ -308,7 +331,10 @@
                                                     </Style>
                                                 </StackPanel.Style>
 
-                                                <TextBlock Text="Эпоха Horizons (UTC)" Style="{StaticResource FieldLabel}" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="Эпоха Horizons (UTC)" Style="{StaticResource FieldLabel}" />
+                                                    <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Дата начала симуляции в формате UTC. Определяет положения планет по эфемеридам JPL Horizons." />
+                                                </StackPanel>
                                                 <TextBox Text="{Binding EpochText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,14" />
 
                                                 <Grid Margin="0,0,0,14">
@@ -354,13 +380,22 @@
                                                     </Style>
                                                 </StackPanel.Style>
 
-                                                <TextBlock Text="Стартовое расстояние r0, км" Style="{StaticResource FieldLabel}" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="Стартовое расстояние r0, км" Style="{StaticResource FieldLabel}" />
+                                                    <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Начальное расстояние аппарата от Юпитера в аналитической модели." />
+                                                </StackPanel>
                                                 <TextBox Text="{Binding IdealStartDistanceKm, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,14" />
 
-                                                <TextBlock Text="Минимальный радиус пролёта R, км" Style="{StaticResource FieldLabel}" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="Минимальный радиус пролёта R, км" Style="{StaticResource FieldLabel}" />
+                                                    <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Минимальное допустимое расстояние при пролёте. Не должен быть меньше радиуса Юпитера (~71 492 км)." />
+                                                </StackPanel>
                                                 <TextBox Text="{Binding IdealSafeRadiusKm, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,14" />
 
-                                                <TextBlock Text="Скорость Юпитера vp, км/с" Style="{StaticResource FieldLabel}" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="Скорость Юпитера vp, км/с" Style="{StaticResource FieldLabel}" />
+                                                    <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Орбитальная скорость Юпитера вокруг Солнца. Среднее значение ≈ 13.07 км/с." />
+                                                </StackPanel>
                                                 <TextBox Text="{Binding IdealPlanetSpeedKms, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
 
                                                 <TextBlock Text="Аналитический режим строит идеальную параболическую траекторию в системе Юпитера и оценивает прирост гелиоцентрической скорости без N-body интегрирования."
@@ -382,7 +417,10 @@
                                             </Style>
                                         </Border.Style>
                                         <StackPanel>
-                                            <TextBlock Text="Интегратор" Style="{StaticResource SectionTitle}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Интегратор" Style="{StaticResource SectionTitle}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Параметры численного интегрирования RK-45 (Dormand-Prince). Определяют точность и длительность расчёта." Margin="8,0,0,14" />
+                                            </StackPanel>
 
                                             <Grid Margin="0,0,0,14">
                                                 <Grid.ColumnDefinitions>
@@ -392,12 +430,18 @@
                                                 </Grid.ColumnDefinitions>
 
                                                 <StackPanel>
-                                                    <TextBlock Text="Длительность, сутки" Style="{StaticResource FieldLabel}" />
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="Длительность, сутки" Style="{StaticResource FieldLabel}" />
+                                                        <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Общее время симуляции в сутках. Большее значение — дольше расчёт, но полнее картина манёвра." />
+                                                    </StackPanel>
                                                     <TextBox Text="{Binding DurationDays, UpdateSourceTrigger=PropertyChanged}" />
                                                 </StackPanel>
 
                                                 <StackPanel Grid.Column="2">
-                                                    <TextBlock Text="Шаг вывода, часы" Style="{StaticResource FieldLabel}" />
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="Шаг вывода, часы" Style="{StaticResource FieldLabel}" />
+                                                        <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Интервал записи кадров для графиков и анимации. Меньший шаг — более плавная анимация." />
+                                                    </StackPanel>
                                                     <TextBox Text="{Binding OutputStepHours, UpdateSourceTrigger=PropertyChanged}" />
                                                 </StackPanel>
                                             </Grid>
@@ -430,7 +474,10 @@
 
                                     <Border Style="{StaticResource SurfaceCard}">
                                         <StackPanel>
-                                            <TextBlock Text="Команды" Style="{StaticResource SectionTitle}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Команды" Style="{StaticResource SectionTitle}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Запуск симуляции, экспорт результатов. После расчёта откроются вкладки Поиск и Сцена." Margin="8,0,0,14" />
+                                            </StackPanel>
                                             <Button Content="Запустить расчёт"
                                                     Style="{StaticResource Button.Primary}"
                                                     Command="{Binding RunCommand}"
@@ -456,7 +503,10 @@
 
                                     <Border Style="{StaticResource SurfaceCard}">
                                         <StackPanel>
-                                            <TextBlock Text="Метрики" Style="{StaticResource SectionTitle}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Метрики" Style="{StaticResource SectionTitle}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Ключевые численные показатели результата: минимальное расстояние, прирост скорости, сохранение энергии." Margin="8,0,0,14" />
+                                            </StackPanel>
                                             <TextBox Text="{Binding MetricsText, Mode=OneWay}" Style="{StaticResource MonoOutputTextBox}" />
                                         </StackPanel>
                                     </Border>
@@ -502,7 +552,7 @@
                                                                         DraggableBodyIndex="{Binding PreviewSpacecraftIndex}"
                                                                         BodyDraggedCommand="{Binding PreviewBodyDraggedCommand}"
                                                                         Title="Положение аппарата и пролёт" />
-                                            <TextBlock Text="* Центр координат — Юпитер. Вы можете перетаскивать аппарат мышкой для изменения фазы входа."
+                                            <TextBlock Text="* Центр координат — Юпитер. Нажмите левой кнопкой в любое место на сцене чтобы переместить аппарат и изменить параметры входа."
                                                        FontSize="11" Foreground="{StaticResource Brush.Text2}" Margin="4,8,0,0" FontStyle="Italic" />
                                         </StackPanel>
                                     </Border>
@@ -563,12 +613,12 @@
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="Оптимизация">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="380" />
+                                    <ColumnDefinition Width="Auto" MinWidth="300" MaxWidth="390" />
                                     <ColumnDefinition Width="18" />
-                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" MinWidth="340" />
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel>
@@ -619,18 +669,30 @@
 
                                     <Border Style="{StaticResource SurfaceCard}">
                                         <StackPanel>
-                                            <TextBlock Text="Локальная доводка" Style="{StaticResource SectionTitle}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Локальная доводка" Style="{StaticResource SectionTitle}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Градиентная оптимизация после сеточного перебора. Уточняет лучший результат малыми шагами по градиенту целевой функции." Margin="8,0,0,14" />
+                                            </StackPanel>
                                             <CheckBox Content="Включить после сеточного перебора"
                                                       IsChecked="{Binding UseLocalRefinement}"
                                                       Margin="0,0,0,12" />
 
-                                            <TextBlock Text="Итерации" Style="{StaticResource FieldLabel}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Итерации" Style="{StaticResource FieldLabel}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Максимальное число шагов градиентной оптимизации. Больше итераций — точнее результат, но дольше расчёт." />
+                                            </StackPanel>
                                             <TextBox Text="{Binding LocalIterations, UpdateSourceTrigger=PropertyChanged}" />
 
-                                            <TextBlock Text="Порог нормы градиента" Style="{StaticResource FieldLabel}" Margin="0,10,0,6" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,10,0,6">
+                                                <TextBlock Text="Порог нормы градиента" Style="{StaticResource FieldLabel}" Margin="0" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Если норма градиента меньше этого порога — оптимизация останавливается (достигнут локальный оптимум)." />
+                                            </StackPanel>
                                             <TextBox Text="{Binding GradientNormTolerance, UpdateSourceTrigger=PropertyChanged}" />
 
-                                            <TextBlock Text="Шаги дифференцирования" Style="{StaticResource FieldLabel}" Margin="0,12,0,6" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,12,0,6">
+                                                <TextBlock Text="Шаги дифференцирования" Style="{StaticResource FieldLabel}" Margin="0" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Размер приращения для численного дифференцирования целевой функции по каждому параметру." />
+                                            </StackPanel>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
@@ -653,7 +715,10 @@
                                                 </StackPanel>
                                             </Grid>
 
-                                            <TextBlock Text="Шаги обновления" Style="{StaticResource FieldLabel}" Margin="0,12,0,6" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,12,0,6">
+                                                <TextBlock Text="Шаги обновления" Style="{StaticResource FieldLabel}" Margin="0" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Максимальный размер шага коррекции параметра за одну итерацию локальной доводки." />
+                                            </StackPanel>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
@@ -680,7 +745,10 @@
 
                                     <Border Style="{StaticResource SurfaceCard}">
                                         <StackPanel>
-                                            <TextBlock Text="Поиск" Style="{StaticResource SectionTitle}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Поиск" Style="{StaticResource SectionTitle}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Запуск полного перебора по сетке параметров. Лучший вариант берётся для доводки." Margin="8,0,0,14" />
+                                            </StackPanel>
                                             <Button Content="Подобрать траекторию"
                                                     Style="{StaticResource Button.Primary}"
                                                     Command="{Binding OptimizeCommand}"
@@ -722,9 +790,9 @@
                     <TabItem Header="Анимация">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" MinWidth="300" />
                                 <ColumnDefinition Width="18" />
-                                <ColumnDefinition Width="340" />
+                                <ColumnDefinition Width="Auto" MinWidth="280" MaxWidth="360" />
                             </Grid.ColumnDefinitions>
 
                             <controls:OrbitSceneControl Grid.Column="0"
@@ -733,7 +801,8 @@
                                                         FrameIndex="{Binding AnimationFrameIndex}"
                                                         ResetViewVersion="{Binding AnimationViewResetVersion}" />
 
-                            <StackPanel Grid.Column="2">
+                            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
                                 <Border Style="{StaticResource HeroCard}">
                                     <StackPanel>
                                         <TextBlock Text="Орбитальная сцена"
@@ -752,7 +821,10 @@
 
                                 <Border Style="{StaticResource SurfaceCard}">
                                     <StackPanel>
-                                        <TextBlock Text="Статус пролёта" Style="{StaticResource SectionTitle}" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Статус пролёта" Style="{StaticResource SectionTitle}" />
+                                            <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Текущее состояние пролёта: минимальное расстояние до планеты, прирост скорости и т.д." Margin="8,0,0,14" />
+                                        </StackPanel>
                                         <TextBlock Text="{Binding AnimationStatusText}"
                                                    Foreground="{StaticResource Brush.Text1}"
                                                    TextWrapping="Wrap" />
@@ -761,7 +833,10 @@
 
                                 <Border Style="{StaticResource SurfaceCard}">
                                     <StackPanel>
-                                        <TextBlock Text="Проигрывание" Style="{StaticResource SectionTitle}" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Проигрывание" Style="{StaticResource SectionTitle}" />
+                                            <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Управление анимацией: пуск/пауза, скорость, покадровое перемещение по временной шкале." Margin="8,0,0,14" />
+                                        </StackPanel>
                                         <TextBlock Text="{Binding AnimationFrameLabel}" Foreground="{StaticResource Brush.Text1}" Margin="0,0,0,12" />
                                         <Slider Minimum="0"
                                                 Maximum="{Binding AnimationFrameMax}"
@@ -792,6 +867,7 @@
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
+                            </ScrollViewer>
                         </Grid>
                     </TabItem>
                     <TabItem Header="Песочница">
@@ -829,7 +905,10 @@
 
                                     <Border Style="{StaticResource SurfaceCard}">
                                         <StackPanel>
-                                            <TextBlock Text="Набор тел" Style="{StaticResource SectionTitle}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Набор тел" Style="{StaticResource SectionTitle}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Список тел в вашей системе. Добавьте тела с массой, координатами и скоростями для N-body симуляции." Margin="8,0,0,14" />
+                                            </StackPanel>
                                             <WrapPanel Margin="0,0,0,14">
                                                 <Button Content="Добавить тело"
                                                         Style="{StaticResource Button.Primary}"
@@ -933,7 +1012,10 @@
                                 <StackPanel Grid.Column="2">
                                     <Border Style="{StaticResource SurfaceCard}">
                                         <StackPanel>
-                                            <TextBlock Text="Запуск песочницы" Style="{StaticResource SectionTitle}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Запуск песочницы" Style="{StaticResource SectionTitle}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Запуск RK-45 интегрирования для вашей пользовательской системы тел. Результаты появятся ниже." Margin="8,0,0,14" />
+                                            </StackPanel>
                                             <WrapPanel Margin="0,0,0,14">
                                                 <Border Style="{StaticResource MetricTile}">
                                                     <StackPanel>
@@ -963,7 +1045,10 @@
 
                                     <Border Style="{StaticResource SurfaceCard}" Margin="0">
                                         <StackPanel>
-                                            <TextBlock Text="Вывод песочницы" Style="{StaticResource SectionTitle}" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Вывод песочницы" Style="{StaticResource SectionTitle}" />
+                                                <ContentControl Style="{StaticResource Icon.Info}" ToolTip="Результаты симуляции: координаты, скорости и другие метрики расчёта." Margin="8,0,0,14" />
+                                            </StackPanel>
                                             <TextBox Text="{Binding SandboxText, Mode=OneWay}" Style="{StaticResource MonoOutputTextBox}" MinHeight="520" />
                                         </StackPanel>
                                     </Border>

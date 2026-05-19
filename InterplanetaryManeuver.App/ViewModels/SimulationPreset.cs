@@ -20,7 +20,8 @@ public sealed class SimulationScenario
     public required DateTime EpochUtc { get; init; }
     public required bool UsesEphemerides { get; init; }
     public required double JupiterSoiRadius { get; init; }
-    public double GravitationalConstant { get; init; } = 6.67430e-11;
+    public double GravitationalConstant { get; init; } = PhysicsSim.Core.AstronomyConstants.G;
+    public IReadOnlyList<double>? BodyGMs { get; init; }
     public bool ToBarycentricFrame { get; init; } = true;
 }
 

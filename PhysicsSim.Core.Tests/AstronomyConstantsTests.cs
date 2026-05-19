@@ -46,4 +46,24 @@ public class AstronomyConstantsTests
         Assert.True(AstronomyConstants.JupiterSemiMajorAxis < 6 * AstronomyConstants.AstronomicalUnit);
         Assert.True(AstronomyConstants.SaturnSemiMajorAxis > AstronomyConstants.JupiterSemiMajorAxis);
     }
+
+    [Fact]
+    public void GravitationalParameters_ArePositiveAndOrdered()
+    {
+        Assert.True(AstronomyConstants.MercuryGM > 0);
+        Assert.True(AstronomyConstants.VenusGM > AstronomyConstants.MercuryGM);
+        Assert.True(AstronomyConstants.EarthGM > AstronomyConstants.VenusGM);
+        Assert.True(AstronomyConstants.JupiterGM > AstronomyConstants.EarthGM);
+        Assert.True(AstronomyConstants.SolarGM > AstronomyConstants.JupiterGM);
+    }
+
+    [Fact]
+    public void Mass_ConsistentWithGM()
+    {
+        double relTol = 1e-4;
+        Assert.Equal(AstronomyConstants.JupiterGM,
+            AstronomyConstants.G * AstronomyConstants.JupiterMass, AstronomyConstants.JupiterGM * relTol);
+        Assert.Equal(AstronomyConstants.SolarGM,
+            AstronomyConstants.G * AstronomyConstants.SolarMass, AstronomyConstants.SolarGM * relTol);
+    }
 }

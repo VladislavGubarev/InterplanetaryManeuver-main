@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Numerics.Tensors;
 
 namespace PhysicsSim.Core;
 
@@ -7,30 +6,44 @@ namespace PhysicsSim.Core;
 /// Ньютоновская N-body модель.
 /// Для каждого тела хранятся координаты и скорости:
 /// r_i' = v_i
-/// v_i' = sum_{j!=i} G * m_j * (r_j - r_i) / |r_j - r_i|^3
+/// v_i' = sum_{j!=i} GM_j * (r_j - r_i) / |r_j - r_i|^3
+///
+/// Используем гравитационные параметры GM вместо G*M — это стандарт
+/// в аэрокосмической отрасли, т.к. GM известен с точностью ~1e-10,
+/// тогда как G и M по отдельности — ~1e-5.
 /// </summary>
 public sealed class NBodySystem : IOdeSystem
 {
-    public double GravitationalConstant { get; }
+    /// <summary>Softening по умолчанию: ε² предотвращает деление на ноль
+    /// при очень малых расстояниях без потери точности на планетарных масштабах.
+    /// ε = 100 м → ε² = 10⁴ м² — пренебрежимо мало на расстояниях > 10⁶ м.</summary>
+    public const double DefaultSofteningSquared = 1e4;
+
+    private readonly double _softeningSquared;
+
     public string[] Names { get; }
     public double[] Masses { get; }
+    public double[] GMs { get; }
 
-    public int BodyCount => Masses.Length;
-    public int Dimension => BodyCount * 6; // На тело: x, y, z, vx, vy, vz.
+    public int BodyCount => GMs.Length;
+    public int Dimension => BodyCount * 6;
 
-    public NBodySystem(double gravitationalConstant, IReadOnlyList<BodyState> bodies, bool toBarycentricFrame = true)
+    public NBodySystem(double gravitationalConstant, IReadOnlyList<BodyState> bodies,
+        bool toBarycentricFrame = true, double softeningSquared = DefaultSofteningSquared)
     {
         if (bodies.Count < 2)
             throw new ArgumentException("Need at least 2 bodies.", nameof(bodies));
 
-        GravitationalConstant = gravitationalConstant;
+        _softeningSquared = softeningSquared;
         Names = new string[bodies.Count];
         Masses = new double[bodies.Count];
+        GMs = new double[bodies.Count];
 
         for (int i = 0; i < bodies.Count; i++)
         {
             Names[i] = bodies[i].Name;
             Masses[i] = bodies[i].Mass;
+            GMs[i] = gravitationalConstant * bodies[i].Mass;
         }
 
         InitialState = new double[Dimension];
@@ -41,10 +54,34 @@ public sealed class NBodySystem : IOdeSystem
             ShiftInitialStateToBarycentricFrame();
     }
 
-    /// <summary>
-    /// Начальный вектор состояния.
-    /// Формат: [x, y, z, vx, vy, vz] для каждого тела подряд.
-    /// </summary>
+    public NBodySystem(IReadOnlyList<BodyState> bodies, IReadOnlyList<double> gms,
+        bool toBarycentricFrame = true, double softeningSquared = DefaultSofteningSquared)
+    {
+        if (bodies.Count < 2)
+            throw new ArgumentException("Need at least 2 bodies.", nameof(bodies));
+        if (bodies.Count != gms.Count)
+            throw new ArgumentException("GM count must match body count.", nameof(gms));
+
+        _softeningSquared = softeningSquared;
+        Names = new string[bodies.Count];
+        Masses = new double[bodies.Count];
+        GMs = new double[bodies.Count];
+
+        for (int i = 0; i < bodies.Count; i++)
+        {
+            Names[i] = bodies[i].Name;
+            Masses[i] = bodies[i].Mass;
+            GMs[i] = gms[i];
+        }
+
+        InitialState = new double[Dimension];
+        for (int i = 0; i < bodies.Count; i++)
+            WriteBodyState(InitialState, i, bodies[i].Position, bodies[i].Velocity);
+
+        if (toBarycentricFrame)
+            ShiftInitialStateToBarycentricFrame();
+    }
+
     public double[] InitialState { get; }
 
     public void ComputeDerivatives(double t, ReadOnlySpan<double> y, Span<double> dy)
@@ -52,7 +89,6 @@ public sealed class NBodySystem : IOdeSystem
         if (y.Length != Dimension) throw new ArgumentException("Invalid state length.", nameof(y));
         if (dy.Length != Dimension) throw new ArgumentException("Invalid derivative length.", nameof(dy));
 
-        // Кинематика: производная координаты равна текущей скорости.
         for (int i = 0; i < BodyCount; i++)
         {
             int baseIdx = i * 6;
@@ -61,7 +97,6 @@ public sealed class NBodySystem : IOdeSystem
             dy[baseIdx + 2] = y[baseIdx + 5];
         }
 
-        // Динамика: суммируем гравитационные ускорения.
         for (int i = 0; i < BodyCount; i++)
         {
             int bi = i * 6;
@@ -75,20 +110,18 @@ public sealed class NBodySystem : IOdeSystem
             {
                 if (j == i) continue;
 
-                double mj = Masses[j];
-                if (mj == 0) continue;
+                double gmj = GMs[j];
+                if (gmj == 0) continue;
 
                 int bj = j * 6;
                 double dx = y[bj + 0] - xi;
                 double dyv = y[bj + 1] - yi;
                 double dz = y[bj + 2] - zi;
 
-                double r2 = dx * dx + dyv * dyv + dz * dz;
-                if (r2 <= 1e-18) continue;
+                double r2 = dx * dx + dyv * dyv + dz * dz + _softeningSquared;
 
-                // Ускорение a = G * mj / r^3 * r_vec
                 double invR3 = Math.Pow(r2, -1.5);
-                double k = GravitationalConstant * mj * invR3;
+                double k = gmj * invR3;
 
                 ax += k * dx;
                 ay += k * dyv;
@@ -172,7 +205,6 @@ public sealed class NBodySystem : IOdeSystem
             for (int j = i + 1; j < BodyCount; j++)
             {
                 int bj = j * 6;
-                double mj = Masses[j];
                 double dx = state[bj + 0] - state[bi + 0];
                 double dy = state[bj + 1] - state[bi + 1];
                 double dz = state[bj + 2] - state[bi + 2];
@@ -180,7 +212,9 @@ public sealed class NBodySystem : IOdeSystem
 
                 if (r2 > 1e-18)
                 {
-                    totalPotential -= GravitationalConstant * mi * mj / Math.Sqrt(r2);
+                    // Для энергии используем точный GM вместо G*mi*mj:
+                    // E_pot = -GM_i * m_j / r = -GM_j * m_i / r (эквивалентно).
+                    totalPotential -= GMs[i] * Masses[j] / Math.Sqrt(r2);
                 }
             }
         }

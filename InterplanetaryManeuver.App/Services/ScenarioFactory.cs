@@ -46,6 +46,12 @@ public sealed class ScenarioFactory
         var saturn = CreateBody(saturnState, AstronomyConstants.SaturnMass);
 
         var bodies = new List<BodyState> { sun, jupiter, saturn };
+        var gms = new List<double>
+        {
+            AstronomyConstants.SolarGM,
+            AstronomyConstants.JupiterGM,
+            AstronomyConstants.SaturnGM,
+        };
         var collisionRadii = new List<double>
         {
             AstronomyConstants.SolarRadius,
@@ -58,6 +64,7 @@ public sealed class ScenarioFactory
         {
             FlybySetup setup = flybySetup ?? new FlybySetup();
             bodies.Add(CreateSpacecraft(jupiter, sun, setup, jupiterSoiRadius));
+            gms.Add(0.0);
             collisionRadii.Add(0.0);
             spacecraftIndex = bodies.Count - 1;
         }
@@ -68,6 +75,7 @@ public sealed class ScenarioFactory
                 ? "Гравиманевр у Юпитера"
                 : "Солнце + Юпитер + Сатурн",
             Bodies = bodies,
+            BodyGMs = gms,
             BodyCollisionRadii = collisionRadii,
             SunIndex = 0,
             JupiterIndex = 1,
@@ -124,6 +132,19 @@ public sealed class ScenarioFactory
             CreateBody(neptuneTask.Result, AstronomyConstants.NeptuneMass),
         };
 
+        var gms = new List<double>
+        {
+            AstronomyConstants.SolarGM,
+            AstronomyConstants.MercuryGM,
+            AstronomyConstants.VenusGM,
+            AstronomyConstants.EarthGM,
+            AstronomyConstants.MarsGM,
+            AstronomyConstants.JupiterGM,
+            AstronomyConstants.SaturnGM,
+            AstronomyConstants.UranusGM,
+            AstronomyConstants.NeptuneGM,
+        };
+
         var collisionRadii = new List<double>
         {
             AstronomyConstants.SolarRadius,
@@ -139,12 +160,14 @@ public sealed class ScenarioFactory
 
         FlybySetup setup = flybySetup ?? new FlybySetup();
         bodies.Add(CreateSpacecraft(bodies[5], bodies[0], setup, jupiterSoiRadius));
+        gms.Add(0.0);
         collisionRadii.Add(0.0);
 
         return new SimulationScenario
         {
             Name = "Расширенная система: 8 планет + КА",
             Bodies = bodies,
+            BodyGMs = gms,
             BodyCollisionRadii = collisionRadii,
             SunIndex = 0,
             JupiterIndex = 5,
