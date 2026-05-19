@@ -518,7 +518,7 @@
                                     </Border>
                                 </StackPanel>
 
-                                <Grid Grid.Column="2">
+                                <StackPanel Grid.Column="2">
                                     <Border>
                                         <Border.Style>
                                             <Style TargetType="{x:Type Border}" BasedOn="{StaticResource HeroCard}">
@@ -614,7 +614,7 @@
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
-                                </Grid>
+                                </StackPanel>
                             </Grid>
                         </ScrollViewer>
                     </TabItem>

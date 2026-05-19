@@ -17,7 +17,7 @@ namespace InterplanetaryManeuver.App.ViewModels;
 
 public sealed class MainViewModel : ObservableObject
 {
-    private const double SaturnMissPenaltyWeight = 40.0;
+    private const double SaturnMissPenaltyWeight = 0.5;
     private const double SoiMissPenaltyWeight = 120.0;
     private const double ReturnPenaltyWeight = 180.0;
     private const double LowFlybyPenaltyWeight = 80.0;
@@ -1729,8 +1729,8 @@ public sealed class MainViewModel : ObservableObject
         AnimationFrameIndex = 0;
         AnimationStatusText = "Аналитический режим не использует покадровую анимацию N-body.";
         OrbitPlotTitle = "Идеальная траектория flyby (система Юпитера)";
-        OrbitPlotXLabel = "X (млн км)";
-        OrbitPlotYLabel = "Y (млн км)";
+        OrbitPlotXLabel = "X, млн км → направление от Юпитера";
+        OrbitPlotYLabel = "Y, млн км → перпендикулярно";
         SpeedPlotTitle = "Скорость в идеальной модели";
         SpeedPlotXLabel = "Прогресс вдоль траектории";
         SpeedPlotYLabel = "v (км/с)";
@@ -2089,9 +2089,9 @@ public sealed class MainViewModel : ObservableObject
 
     private void BuildPlots(SimulationResult result, SimulationScenario scenario)
     {
-        OrbitPlotTitle = "Траектории (относительно Солнца)";
-        OrbitPlotXLabel = "X (а.е.)";
-        OrbitPlotYLabel = "Y (а.е.)";
+        OrbitPlotTitle = "Траектории (гелиоцентрическая эклиптическая СК)";
+        OrbitPlotXLabel = "X, а.е. → направление весеннего равноденствия";
+        OrbitPlotYLabel = "Y, а.е. → перпендикулярно в плоскости эклиптики";
         SpeedPlotTitle = "Скорость аппарата";
         SpeedPlotXLabel = "t (сутки)";
         SpeedPlotYLabel = "v (км/с)";
@@ -2837,9 +2837,9 @@ public sealed class MainViewModel : ObservableObject
         OrbitSeries = Array.Empty<LineSeries>();
         SpeedSeries = Array.Empty<LineSeries>();
         SpeedComponentSeries = Array.Empty<LineSeries>();
-        OrbitPlotTitle = "Траектории (относительно Солнца)";
-        OrbitPlotXLabel = "X (а.е.)";
-        OrbitPlotYLabel = "Y (а.е.)";
+        OrbitPlotTitle = "Траектории (гелиоцентрическая эклиптическая СК)";
+        OrbitPlotXLabel = "X, а.е. → направление весеннего равноденствия";
+        OrbitPlotYLabel = "Y, а.е. → перпендикулярно в плоскости эклиптики";
         SpeedPlotTitle = "Скорость аппарата";
         SpeedPlotXLabel = "t (сутки)";
         SpeedPlotYLabel = "v (км/с)";
