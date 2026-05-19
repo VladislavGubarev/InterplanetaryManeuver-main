@@ -63,6 +63,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _isModelCalculated;
     private bool _isOptimizationDone;
     private bool _useTensors;
+    private bool _isDraggingBody;
     private IReadOnlyList<LineSeries> _orbitSeries = Array.Empty<LineSeries>();
     private IReadOnlyList<LineSeries> _speedSeries = Array.Empty<LineSeries>();
     private IReadOnlyList<LineSeries> _speedComponentSeries = Array.Empty<LineSeries>();
@@ -271,7 +272,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void TriggerPreview()
     {
-        if (IsRunning || HasResults) return;
+        if (IsRunning || HasResults || _isDraggingBody) return;
         _ = UpdatePreviewAsync();
     }
 
@@ -1410,9 +1411,20 @@ public sealed class MainViewModel : ObservableObject
     private RelayCommand<Vector3d>? _previewBodyDraggedCommand;
     public ICommand PreviewBodyDraggedCommand => _previewBodyDraggedCommand ??= new RelayCommand<Vector3d>(OnPreviewBodyDragged);
 
+    private RelayCommand? _previewBodyDragEndedCommand;
+    public ICommand PreviewBodyDragEndedCommand => _previewBodyDragEndedCommand ??= new RelayCommand(OnPreviewBodyDragEnded);
+
+    private void OnPreviewBodyDragEnded()
+    {
+        _isDraggingBody = false;
+        TriggerPreview();
+    }
+
     private void OnPreviewBodyDragged(Vector3d relPos)
     {
         if (IsRunning || HasResults) return;
+
+        _isDraggingBody = true;
 
         double angleRad = Math.Atan2(relPos.Y, relPos.X);
         double angleDeg = Math.Round(angleRad * 180.0 / Math.PI, 2);
@@ -1431,7 +1443,6 @@ public sealed class MainViewModel : ObservableObject
                 ? scene.Positions[frame][cenIdx]
                 : Vector3d.Zero;
             scene.Positions[frame][sci] = centerPos + relPos;
-            // Принудительно обновляем привязку — мутация массива не вызывает PropertyChanged
             PreviewScene = null!;
             PreviewScene = scene;
         }
